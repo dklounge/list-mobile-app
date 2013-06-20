@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Apigee Training App</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.1/jquery.mobile-1.1.1.min.css" />
+        <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <script src="http://code.jquery.com/mobile/1.1.1/jquery.mobile-1.1.1.min.js"></script>
+        <script src="https://apigee.com/usergrid/sdk/usergrid.0.10.5.js"></script>
+        <script type="text/javascript">
+        
+            var apigee = new Usergrid.Client({
+                orgName:'dklounge',
+                appName:'sandbox'
+            });
+
+            // A Collection object that will be used to hold the list of books locally
+            var books = new Usergrid.Collection( { "client":apigee, "type":"books" } );
+
+
+            $(document).ready( function () {
+              loadBooks();              
+                // Actual network call
+              function loadBooks() {  
+                books.fetch(
+
+                    // Success Callback
+                    function () {
+                        $('#books-list').empty();
+                        while ( books.hasNextEntity() ) {
+                            var current_book = books.getNextEntity();
+
+                            // Output the book on the page
+                            $('#books-list').append('<li><h3>'+current_book.get('title')+'</h3><p>'+current_book.get('author')+'</p></li>');
+                        }
+                        
+                        // Re-apply jQuery Mobile styles
+                        $('#books-list').listview('refresh');
+                    },
+                    // Failure Callback
+                    function () { alert("read failed"); }
+                );
+              }
+
+              // Submitting new book - general process of what you want
+              /*
+                0. Subscribe to clicks -> .bind() // .click() is deprecated
+                1. Button click -> write a function and bind it to click, and inside cal .val
+                2. Read the textboxes -> .val()
+                3. Create the object in the DB - > .addEntity()
+                4. Read the DB again -> package prev code into function
+                5. Close dialog -> history.back()
+              */
+
+              // book = { "title": "the old man and the sea" };
+              //  books.addEntity(book, function (error, response) {
+              //    if (error) { console.log("write failed");
+              //    } else { console.log("write succeeded"); 
+              //  } 
+              // });
+              $('#create-button').bind('click', function createBook () {
+                new_book = { 
+                    "title": $("#title-field").val(),  
+                    "author": $("#author-field").val()
+                  };
+                
+                books.addEntity(new_book, function (error, response) {
+                   if (error) { alert("error: write failed");
+                   } else {  
+                      $('#title-field').val(''), $('#author-field').val('');
+                      loadBooks();
+                      history.back();
+                   } 
+                });
+                 
+
+              });
+
+            });
+
+        </script>
+    </head>
+    <body>
+
+        <div data-role="page" data-theme="c" id="page-books-list">
+            <div data-role="header" data-theme="b">
+                <h1>My Books</h1>
+                <a href="#page-new-book" data-rel="dialog" id="btn-compose" data-icon="plus" 
+                data-iconpos="right" data-inline="true" data-role="button" 
+                class="ui-btn-right">Add</a>
+
+                <a href="#" data-rel="dialog" id="btn-compose" data-icon="delete" 
+                data-iconpos="left" data-inline="true" data-role="button" 
+                class="ui-btn-left">Delete</a>
+            </div>
+            <div data-role="content">
+                <ul id="books-list"  data-role="listview" data-inset="false" >
+                    <li>
+                        <h3>First Title</h3>
+                        <p>First author</p>
+                    </li>
+                    <li>
+                        <h3>Second Title</h3>
+                        <p>Second author</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+
+        <div data-role="page" data-theme="b" id="page-new-book">
+          <div data-role="header" data-theme="b">
+            <h1>Add a New Book</h1>
+          </div>
+          <div data-role="content">
+            <form action="http://api.usergrid.com/dklounge/sandbox/books" 
+            method="POST" data-ajax="true" target="_blank">
+                <label for="title-field">Title</label>
+                <textarea id="title-field"></textarea>
+                <label for="author-field">Author</label>
+                <textarea id="author-field"></textarea>
+            </form>    
+            <!-- alternative is onclick="history.back();-->
+            <a data-rel="back" data-role="button" data-theme="c" data-inline="true">Cancel</a>
+            <button id="create-button" data-inline="true">Create</button>
+          </div>
+        </div>
+
+    </body>
+</html>
